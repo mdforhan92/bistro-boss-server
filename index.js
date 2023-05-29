@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const jwt = require('jsonwebtoken'); 
 require('dotenv').config();
 const port = process.env.PORT || 3000;
 
@@ -32,12 +33,21 @@ async function run() {
     const reviewCollection = client.db("bistroDb").collection("reviews");
     const cartCollection = client.db("bistroDb").collection("carts");
 
+    // jwt post
+    app.post('/jwt', (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+      res.send({ token });
+    });
+
+
+
     //! users related api
 
-    //! post to users 
+    //! post to users {user login korle server users e add hobe}
     app.post('/users', async (req, res) => {
       const user = req.body;
-      const query = { email: user.email };
+      const query = { email: user.email };6
       const existingUser = await usersCollection.findOne(query);
       if (existingUser) {
         return res.send({ status: 'error', message: 'User already exists' });
@@ -86,6 +96,20 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // update make an admin
+    app.patch('/users/admin/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: 'admin'
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
