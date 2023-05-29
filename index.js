@@ -27,25 +27,45 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    const usersCollection = client.db("bistroDb").collection("users");
     const menuCollection = client.db("bistroDb").collection("menu");
     const reviewCollection = client.db("bistroDb").collection("reviews");
     const cartCollection = client.db("bistroDb").collection("carts");
 
+    //! users related api
+
+    //! post to users 
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ status: 'error', message: 'User already exists' });
+      }
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    //! get all users
+    app.get('/users', async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
 
     //! get all menu items
     app.get('/menu', async (req, res) => {
-        const result = await menuCollection.find().toArray();
-        res.send(result);
+      const result = await menuCollection.find().toArray();
+      res.send(result);
     });
     //! get all reviews items
     app.get('/reviews', async (req, res) => {
-        const result = await reviewCollection.find().toArray();
-        res.send(result);
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
     });
     //! post to carts
     app.post('/carts', async (req, res) => {
       const item = req.body;
-      console.log(item);
       const result = await cartCollection.insertOne(item);
       res.send(result);
     });
@@ -53,10 +73,10 @@ async function run() {
     app.get('/carts', async (req, res) => {
       const email = req.query.email;
       console.log(email);
-      if(!email){
+      if (!email) {
         res.send([]);
       }
-      const query = {email: email};
+      const query = { email: email };
       const result = await cartCollection.find(query).toArray();
       res.send(result);
     });
@@ -64,7 +84,7 @@ async function run() {
     // delete from cart
     app.delete('/carts/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await cartCollection.deleteOne(query);
       res.send(result);
     });
@@ -93,11 +113,11 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-    res.send('Boss is Sitting')
+  res.send('Boss is Sitting')
 }
 );
 app.listen(port, () => {
-    console.log(`Bistro Boss is sitting at ${port}`)
+  console.log(`Bistro Boss is sitting at ${port}`)
 }
 );
 
