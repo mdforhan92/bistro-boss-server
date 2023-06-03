@@ -1,8 +1,9 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
-const jwt = require('jsonwebtoken'); 
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 const port = process.env.PORT || 3000;
 
 //middleware
@@ -12,16 +13,16 @@ app.use(express.json());
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
   if (!authorization) {
-  return res.status(401).send({error: true, message: 'unauthorized access'});
+    return res.status(401).send({ error: true, message: 'unauthorized access' });
   }
   const token = authorization.split(' ')[1];
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-  if (err) {
-  return res.status(401).send({error: true, message: 'unauthorized access'});
-  }
-  req.decoded = decoded;
-  next();
+    if (err) {
+      return res.status(401).send({ error: true, message: 'unauthorized access' });
+    }
+    req.decoded = decoded;
+    next();
   });
 }
 
@@ -174,8 +175,23 @@ async function run() {
       // }
       const query = { email: email };
       const user = await usersCollection.findOne(query);
-      const result = {admin: user?.role === 'admin'};
+      const result = { admin: user?.role === 'admin' };
       res.send(result);
+    });
+
+    //! create payment intent
+    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+      console.log(price, amount)
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      });
     });
 
 
